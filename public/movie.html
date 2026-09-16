@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Film-Tracker</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#07070c">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Film-Tracker">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  body { padding-bottom: 48px; }
+
+  .hero {
+    position: relative;
+    margin: 20px 24px 28px;
+    border-radius: 20px;
+    overflow: hidden;
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+  .hero-backdrop { width: 100%; aspect-ratio: 16/6; object-fit: cover; display: block; background: var(--surface-2); opacity: 0.5; }
+  .hero::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, var(--surface) 5%, rgba(20,20,29,0.55) 45%, transparent 75%),
+                linear-gradient(115deg, rgba(139,92,246,0.18), transparent 55%);
+  }
+  .hero-content { position: absolute; inset: 0; display: flex; gap: 22px; align-items: flex-end; padding: 26px; z-index: 1; }
+  .hero-poster {
+    width: 140px;
+    min-width: 140px;
+    aspect-ratio: 2/3;
+    object-fit: cover;
+    border-radius: 12px;
+    background: var(--surface-2);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.55), 0 0 0 1px var(--accent-glow);
+  }
+  .hero-info h1 { margin: 0 0 6px; font-size: 28px; }
+  .hero-meta { font-size: 13px; color: var(--text-dim); margin-bottom: 10px; }
+  .tagline { font-style: italic; color: var(--text-dim); font-size: 14px; margin: 4px 0 18px; }
+  .genres span {
+    display: inline-block;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    padding: 4px 11px;
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--text-dim);
+    margin: 4px 6px 0 0;
+  }
+
+  .content { max-width: 1000px; margin: 0 auto; padding: 0 24px; }
+  .content h2 { margin-top: 30px; }
+  .overview { line-height: 1.7; font-size: 14.5px; color: var(--text-dim); }
+  .ratings { margin-bottom: 6px; }
+  .ratings span {
+    display: inline-block;
+    margin-right: 8px;
+    font-size: 12.5px;
+    font-weight: 600;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+
+  .cast-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(115px, 1fr)); gap: 14px; }
+  .cast-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+  .cast-card:hover { transform: translateY(-4px); border-color: var(--border-hover); }
+  .cast-card img { width: 100%; aspect-ratio: 2/3; object-fit: cover; border-radius: 6px; background: var(--surface-2); display: block; }
+  .cast-name { font-size: 12.5px; margin-top: 7px; font-weight: 600; }
+  .cast-role { font-size: 11.5px; color: var(--text-faint); }
+
+  .btn-row { display: flex; gap: 10px; margin-top: 22px; flex-wrap: wrap; }
+
+  .parts-list { margin-top: 4px; }
+  .part-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+  .part-link { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+  .part-link:hover .part-title { color: var(--accent-1); }
+  .part-row img { width: 36px; height: 52px; object-fit: cover; border-radius: 5px; background: var(--surface-2); }
+  .status-ok { color: var(--success); font-size: 12px; }
+  .status-missing { color: #f0a020; font-size: 12px; }
+  .current-tag {
+    background: var(--gradient);
+    color: white;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 8px;
+    margin-left: 6px;
+  }
+  .part-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .mini-btn {
+    font-size: 11.5px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text-dim);
+    cursor: pointer;
+    white-space: nowrap;
+    box-shadow: none;
+    font-weight: 500;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .mini-btn:hover { border-color: var(--border-hover); color: var(--text); transform: none; filter: none; }
+  .mini-btn.is-watched { background: var(--success); border-color: var(--success); color: white; }
+  .mini-btn.is-watchlist { background: var(--gradient); border-color: transparent; color: white; }
+
+  .watch-btn.watched { background: var(--success); box-shadow: 0 4px 16px var(--success-glow); }
+  .watchlist-btn {
+    background: transparent;
+    border: 1px solid var(--accent-1);
+    color: #c4b5fd;
+    box-shadow: none;
+  }
+  .watchlist-btn:hover { background: rgba(139,92,246,0.1); transform: translateY(-1px); }
+  .watchlist-btn.onlist { background: var(--gradient); color: white; border-color: transparent; }
+
+  #loading, #notfound { padding: 60px 24px; color: var(--text-faint); text-align: center; font-size: 14px; }
+</style>
+</head>
+<body>
+  <a class="backlink" href="index.html">&larr; Zurück zur Übersicht</a>
+  <div id="loading">Lädt...</div>
+  <div id="app" style="display:none;"></div>
+
+<script>
+const params = new URLSearchParams(location.search);
+const movieId = params.get('id');
+
+function posterOrPlaceholder(url) {
+  return url || '';
+}
+
+async function load() {
+  if (!movieId) {
+    document.getElementById('loading').textContent = 'Kein Film angegeben.';
+    return;
+  }
+  const res = await fetch('/api/movie/' + movieId);
+  if (!res.ok) {
+    document.getElementById('loading').textContent = 'Film konnte nicht geladen werden.';
+    return;
+  }
+  const m = await res.json();
+  render(m);
+}
+
+function render(m) {
+  document.title = `${m.title} — Film-Tracker`;
+  document.getElementById('loading').style.display = 'none';
+  const app = document.getElementById('app');
+  app.style.display = 'block';
+
+  const directors = (m.directors || []).join(', ');
+
+  const castHtml = (m.cast || []).length ? `
+    <h2>Darsteller</h2>
+    <div class="cast-grid">
+      ${m.cast.map(c => `
+        <a href="person.html?id=${c.id}">
+          <div class="cast-card">
+            <img src="${posterOrPlaceholder(c.profile)}" alt="">
+            <div class="cast-name">${c.name}</div>
+            <div class="cast-role">${c.character || ''}</div>
+          </div>
+        </a>
+      `).join('')}
+    </div>
+  ` : '';
+
+  let seriesHtml = '';
+  if (m.sequelInfo) {
+    seriesHtml = `
+      <h2>${m.sequelInfo.collectionName}</h2>
+      <div class="parts-list">
+        ${m.sequelInfo.parts.map(p => `
+          <div class="part-row">
+            <a class="part-link" href="movie.html?id=${p.tmdbId}">
+              <img src="${posterOrPlaceholder(p.poster)}" alt="">
+              <div style="flex:1; min-width:0;">
+                <div class="part-title">${p.title} (${p.year}) ${p.isCurrent ? '<span class="current-tag">gerade offen</span>' : ''}</div>
+                <div class="${p.watched ? 'status-ok' : 'status-missing'}">
+                  ${p.watched ? 'gesehen' : 'noch nicht gesehen'}
+                </div>
+              </div>
+            </a>
+            <div class="part-actions">
+              <button class="mini-btn ${p.watched ? 'is-watched' : ''}" onclick="toggleWatched(${p.tmdbId}, '${p.title.replace(/'/g, "\\'")}', '${p.poster || ''}')">
+                ${p.watched ? '✓ gesehen' : 'gesehen'}
+              </button>
+              <button class="mini-btn ${p.onWatchlist ? 'is-watchlist' : ''}" onclick="toggleWatchlist(${p.tmdbId}, '${p.title.replace(/'/g, "\\'")}', '${p.poster || ''}')">
+                ${p.onWatchlist ? '✓ Watchlist' : 'will ich sehen'}
+              </button>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  const recHtml = (m.recommendations || []).length ? `
+    <h2>Ähnliche Filme</h2>
+    <div class="grid">
+      ${m.recommendations.map(r => `
+        <a href="movie.html?id=${r.tmdbId}">
+          <div class="card">
+            <img src="${posterOrPlaceholder(r.poster)}" alt="">
+            <div class="title">${r.title}</div>
+            <div class="meta">${r.year}</div>
+          </div>
+        </a>
+      `).join('')}
+    </div>
+  ` : '';
+
+  app.innerHTML = `
+    <div class="hero">
+      <img class="hero-backdrop" src="${posterOrPlaceholder(m.backdrop)}" alt="">
+      <div class="hero-content">
+        <img class="hero-poster" src="${posterOrPlaceholder(m.poster)}" alt="">
+        <div class="hero-info">
+          <h1>${m.title} ${m.year ? `(${m.year})` : ''}</h1>
+          <div class="hero-meta">
+            ${m.runtime ? `${m.runtime} Min.` : ''}
+            ${directors ? ` &middot; Regie: ${directors}` : ''}
+          </div>
+          <div class="ratings">
+            ${m.imdbRating ? `<span>IMDb ${m.imdbRating}</span>` : ''}
+            ${m.rottenTomatoes ? `<span>RT ${m.rottenTomatoes}</span>` : ''}
+          </div>
+          <div class="genres">${(m.genres || []).map(g => `<span>${g}</span>`).join('')}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+      ${m.tagline ? `<div class="tagline">${m.tagline}</div>` : ''}
+      <h2>Beschreibung</h2>
+      <p class="overview">${m.overview || 'Keine Beschreibung verfügbar.'}</p>
+
+      <div class="btn-row">
+        <button class="watch-btn ${m.watched ? 'watched' : ''}" onclick="toggleWatched(${m.tmdbId}, '${m.title.replace(/'/g, "\\'")}', '${m.poster || ''}')">
+          ${m.watched ? 'Als ungesehen markieren' : 'Als gesehen markieren'}
+        </button>
+        <button class="watchlist-btn ${m.onWatchlist ? 'onlist' : ''}" onclick="toggleWatchlist(${m.tmdbId}, '${m.title.replace(/'/g, "\\'")}', '${m.poster || ''}')">
+          ${m.onWatchlist ? '✓ Will ich schauen' : 'Will ich schauen'}
+        </button>
+      </div>
+
+      ${castHtml}
+      ${seriesHtml}
+      ${recHtml}
+    </div>
+  `;
+}
+
+async function toggleWatched(tmdbId, title, poster) {
+  const watchedRes = await fetch('/api/watched');
+  const watched = await watchedRes.json();
+  const already = watched.some(w => w.tmdbId === tmdbId);
+
+  if (already) {
+    await fetch('/api/watched/' + tmdbId, { method: 'DELETE' });
+  } else {
+    await fetch('/api/watched', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tmdbId, title, poster }),
+    });
+  }
+  load();
+}
+
+async function toggleWatchlist(tmdbId, title, poster) {
+  const listRes = await fetch('/api/watchlist');
+  const list = await listRes.json();
+  const already = list.some(w => w.tmdbId === tmdbId);
+
+  if (already) {
+    await fetch('/api/watchlist/' + tmdbId, { method: 'DELETE' });
+  } else {
+    await fetch('/api/watchlist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tmdbId, title, poster }),
+    });
+  }
+  load();
+}
+
+async function init() {
+  const res = await fetch('/api/me');
+  if (!res.ok) {
+    location.href = 'login.html';
+    return;
+  }
+  load();
+}
+
+init();
+</script>
+<script>
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+</script>
+</body>
+</html>

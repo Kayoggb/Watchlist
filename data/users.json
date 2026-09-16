@@ -1,0 +1,14 @@
+[
+  {
+    "id": "0f864e0f-696f-4ec5-bba5-831772a7606d",
+    "username": "kaya.yongaci@zurich.ch",
+    "passwordHash": "$2b$10$RPIrTBtSbJNF56Kh6W9GaOsW9ZcZZRE7lo1UAis9NixVyOvp7.ORC",
+    "createdDate": "2026-07-30"
+  },
+  {
+    "id": "bdf44f5d-35f7-46ec-81bb-5041bc99a3aa",
+    "username": "kaya.yongaci@icloud.com",
+    "passwordHash": "$2b$10$NaDjn5Yes4vwE7CwC4JhWuNsMTrpDxhxc.X6g/ywC.lm7cAtqdobK",
+    "createdDate": "2026-07-30"
+  }
+]

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Film-Tracker — Login</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#07070c">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Film-Tracker">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  body { display: flex; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; position: relative; }
+
+  .blob { position: fixed; border-radius: 50%; filter: blur(90px); opacity: 0.35; z-index: 0; animation: drift 16s ease-in-out infinite alternate; }
+  .blob-1 { width: 420px; height: 420px; background: var(--accent-1); top: -140px; left: -120px; }
+  .blob-2 { width: 380px; height: 380px; background: var(--accent-2); bottom: -160px; right: -100px; animation-delay: -8s; }
+  @keyframes drift {
+    from { transform: translate(0, 0) scale(1); }
+    to { transform: translate(30px, 40px) scale(1.08); }
+  }
+
+  .box {
+    position: relative;
+    z-index: 1;
+    background: rgba(20, 20, 29, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 36px;
+    width: 100%;
+    max-width: 350px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(139,92,246,0.15);
+  }
+  .brand { text-align: center; font-size: 30px; margin-bottom: 22px; }
+  h1 { font-size: 21px; margin: 0 0 4px; }
+  .sub { color: var(--text-faint); font-size: 13px; margin-bottom: 22px; }
+  label { display: block; font-size: 12.5px; color: var(--text-dim); margin-bottom: 6px; font-weight: 500; }
+  input { width: 100%; margin-bottom: 16px; }
+  button { width: 100%; padding: 11px; font-size: 14px; }
+  .switch { text-align: center; margin-top: 18px; font-size: 13px; color: var(--text-faint); }
+  .switch a { color: var(--accent-1); cursor: pointer; font-weight: 600; }
+  .switch a:hover { text-decoration: underline; }
+  .error { color: #f87171; font-size: 13px; margin: -8px 0 14px; min-height: 16px; }
+</style>
+</head>
+<body>
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+
+  <div class="box">
+    <div class="brand">🎬</div>
+    <h1 id="title">Anmelden</h1>
+    <div class="sub" id="subtitle">Bei deinem Film-Tracker-Konto anmelden</div>
+    <form id="form">
+      <label for="username">Benutzername</label>
+      <input id="username" autocomplete="username" required>
+      <label for="password">Passwort</label>
+      <input id="password" type="password" autocomplete="current-password" required>
+      <div class="error" id="error"></div>
+      <button type="submit" id="submitBtn">Anmelden</button>
+    </form>
+    <div class="switch">
+      <span id="switchText">Noch kein Konto?</span>
+      <a id="switchLink" onclick="toggleMode()">Registrieren</a>
+    </div>
+  </div>
+
+<script>
+let mode = 'login';
+
+function toggleMode() {
+  mode = mode === 'login' ? 'register' : 'login';
+  document.getElementById('title').textContent = mode === 'login' ? 'Anmelden' : 'Konto erstellen';
+  document.getElementById('subtitle').textContent = mode === 'login'
+    ? 'Bei deinem Film-Tracker-Konto anmelden'
+    : 'Neues Film-Tracker-Konto anlegen';
+  document.getElementById('submitBtn').textContent = mode === 'login' ? 'Anmelden' : 'Registrieren';
+  document.getElementById('switchText').textContent = mode === 'login' ? 'Noch kein Konto?' : 'Schon ein Konto?';
+  document.getElementById('switchLink').textContent = mode === 'login' ? 'Registrieren' : 'Anmelden';
+  document.getElementById('error').textContent = '';
+}
+
+document.getElementById('form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+  const errorEl = document.getElementById('error');
+  errorEl.textContent = '';
+
+  const res = await fetch('/api/' + mode, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  });
+  const data = await res.json();
+
+  if (!res.ok) {
+    errorEl.textContent = data.error || 'Etwas ist schiefgelaufen.';
+    return;
+  }
+  location.href = 'index.html';
+});
+
+// Schon eingeloggt? Dann direkt weiter zur Startseite.
+fetch('/api/me').then(res => { if (res.ok) location.href = 'index.html'; });
+</script>
+<script>
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+</script>
+</body>
+</html>

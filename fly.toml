@@ -1,0 +1,21 @@
+# Wird von `fly launch` normalerweise automatisch erzeugt/angepasst.
+# app-Name muss global eindeutig sein -> beim `fly launch` ggf. anderen Namen waehlen.
+app = "film-tracker-DEINNAME"
+primary_region = "fra"
+
+[build]
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[[mounts]]
+  source = "film_tracker_data"
+  destination = "/app/data"
+
+[[vm]]
+  size = "shared-cpu-1x"

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Film-Tracker</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#07070c">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Film-Tracker">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  body { padding-bottom: 48px; }
+  .content { max-width: 1000px; margin: 0 auto; padding: 0 24px; }
+
+  .person-header {
+    display: flex;
+    gap: 26px;
+    align-items: flex-start;
+    margin: 24px 0 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+  }
+  .person-photo {
+    width: 150px;
+    min-width: 150px;
+    aspect-ratio: 2/3;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    box-shadow: 0 10px 28px rgba(0,0,0,0.45), 0 0 0 1px var(--accent-glow);
+  }
+  .person-info h1 { margin: 0 0 8px; font-size: 25px; }
+  .person-meta { font-size: 13px; color: var(--text-dim); margin-bottom: 12px; line-height: 1.6; }
+  .bio { font-size: 14px; line-height: 1.7; color: var(--text-dim); max-height: 220px; overflow-y: auto; padding-right: 8px; }
+  .content h2 { margin-top: 30px; }
+
+  #loading, #notfound { padding: 60px 24px; color: var(--text-faint); text-align: center; font-size: 14px; }
+</style>
+</head>
+<body>
+  <a class="backlink" href="index.html">&larr; Zurück zur Übersicht</a>
+  <div id="loading">Lädt...</div>
+  <div id="app" style="display:none;"></div>
+
+<script>
+const params = new URLSearchParams(location.search);
+const personId = params.get('id');
+let currentPerson = null;
+
+async function load() {
+  if (!personId) {
+    document.getElementById('loading').textContent = 'Keine Person angegeben.';
+    return;
+  }
+  const res = await fetch('/api/person/' + personId);
+  if (!res.ok) {
+    document.getElementById('loading').textContent = 'Person konnte nicht geladen werden.';
+    return;
+  }
+  currentPerson = await res.json();
+  render();
+}
+
+function escapeStr(s) {
+  return (s || '').replace(/'/g, "\\'");
+}
+
+function render() {
+  const p = currentPerson;
+  document.title = `${p.name} — Film-Tracker`;
+  document.getElementById('loading').style.display = 'none';
+  const app = document.getElementById('app');
+  app.style.display = 'block';
+
+  const metaParts = [];
+  if (p.birthday) metaParts.push(`geboren ${p.birthday}`);
+  if (p.placeOfBirth) metaParts.push(p.placeOfBirth);
+
+  const moviesHtml = (p.movies || []).length ? `
+    <h2>Filmografie</h2>
+    <div class="grid">
+      ${p.movies.map(m => `
+        <a href="movie.html?id=${m.tmdbId}">
+          <div class="card">
+            ${m.watched ? '<span class="badge">gesehen</span>' : ''}
+            ${!m.watched && m.onWatchlist ? '<span class="badge watchlist">will ich schauen</span>' : ''}
+            <img src="${m.poster || ''}" alt="">
+            <div class="title">${m.title}</div>
+            <div class="meta">${m.year}</div>
+            ${m.character ? `<div class="char">als ${m.character}</div>` : ''}
+            <div class="quick-actions">
+              <button class="qa-btn ${m.watched ? 'qa-active-watched' : ''}"
+                onclick="event.preventDefault(); event.stopPropagation(); quickToggleWatched(${m.tmdbId}, '${escapeStr(m.title)}', '${m.poster || ''}')">
+                ${m.watched ? '✓ gesehen' : 'gesehen'}
+              </button>
+              <button class="qa-btn ${m.onWatchlist ? 'qa-active-watchlist' : ''}"
+                onclick="event.preventDefault(); event.stopPropagation(); quickToggleWatchlist(${m.tmdbId}, '${escapeStr(m.title)}', '${m.poster || ''}')">
+                ${m.onWatchlist ? '✓ Liste' : 'will ich sehen'}
+              </button>
+            </div>
+          </div>
+        </a>
+      `).join('')}
+    </div>
+  ` : '<p style="color:#999;">Keine Filmografie gefunden.</p>';
+
+  app.innerHTML = `
+    <div class="content">
+      <div class="person-header">
+        <img class="person-photo" src="${p.profile || ''}" alt="">
+        <div class="person-info">
+          <h1>${p.name}</h1>
+          <div class="person-meta">${metaParts.join(' &middot; ')}</div>
+          ${p.biography ? `<div class="bio">${p.biography}</div>` : ''}
+        </div>
+      </div>
+      ${moviesHtml}
+    </div>
+  `;
+}
+
+function patchMovie(tmdbId, patch) {
+  currentPerson.movies = currentPerson.movies.map(m => m.tmdbId === tmdbId ? { ...m, ...patch } : m);
+  render();
+}
+
+async function quickToggleWatched(tmdbId, title, poster) {
+  const res = await fetch('/api/watched');
+  const watched = await res.json();
+  const already = watched.some(w => w.tmdbId === tmdbId);
+
+  if (already) {
+    await fetch('/api/watched/' + tmdbId, { method: 'DELETE' });
+    patchMovie(tmdbId, { watched: false });
+  } else {
+    await fetch('/api/watched', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tmdbId, title, poster }),
+    });
+    patchMovie(tmdbId, { watched: true, onWatchlist: false });
+  }
+}
+
+async function quickToggleWatchlist(tmdbId, title, poster) {
+  const res = await fetch('/api/watchlist');
+  const list = await res.json();
+  const already = list.some(w => w.tmdbId === tmdbId);
+
+  if (already) {
+    await fetch('/api/watchlist/' + tmdbId, { method: 'DELETE' });
+    patchMovie(tmdbId, { onWatchlist: false });
+  } else {
+    await fetch('/api/watchlist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tmdbId, title, poster }),
+    });
+    patchMovie(tmdbId, { onWatchlist: true });
+  }
+}
+
+async function init() {
+  const res = await fetch('/api/me');
+  if (!res.ok) {
+    location.href = 'login.html';
+    return;
+  }
+  load();
+}
+
+init();
+</script>
+<script>
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+</script>
+</body>
+</html>

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Film-Tracker</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#07070c">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Film-Tracker">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  body { padding: 28px; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .topbar h1 { margin: 0; }
+  .whoami-row { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--text-faint); }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <h1 class="logo">🎬 Film-Tracker</h1>
+    <div class="whoami-row">
+      <span id="whoami"></span>
+      <button class="reload-btn" onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="controls-row" id="controlsRow">
+    <div class="tabbar">
+      <button class="tab-btn active" data-tab="discover" onclick="switchTab('discover')">Empfohlen für dich</button>
+      <button class="tab-btn" data-tab="nowplaying" onclick="switchTab('nowplaying')">Neuerscheinungen</button>
+      <button class="tab-btn" data-tab="watchlist" onclick="switchTab('watchlist')">Will ich schauen<span class="tab-count" id="count-watchlist"></span></button>
+      <button class="tab-btn" data-tab="watched" onclick="switchTab('watched')">Habe ich gesehen<span class="tab-count" id="count-watched"></span></button>
+    </div>
+    <div class="search-box">
+      <select id="genreSelect" onchange="onGenreChange()">
+        <option value="">Genre...</option>
+      </select>
+      <input id="q" placeholder="Film suchen..." oninput="onSearchInput()" onkeydown="if (event.key === 'Enter') search()">
+      <button onclick="search()">Suchen</button>
+    </div>
+  </div>
+
+  <div id="searchSection" style="display:none;">
+    <div class="panel-head" style="justify-content:flex-start;">
+      <button class="reload-btn" onclick="clearSearch()">&larr; Zurück</button>
+    </div>
+    <h2>Suchergebnisse</h2>
+    <div id="results" class="grid"></div>
+  </div>
+
+  <div id="genreSection" style="display:none;">
+    <div class="panel-head" style="justify-content:flex-start;">
+      <button class="reload-btn" onclick="clearGenre()">&larr; Zurück</button>
+    </div>
+    <h2 id="genreTitle">Genre</h2>
+    <div id="genreResults" class="grid"></div>
+    <div style="text-align:center; margin-top:16px;">
+      <button class="reload-btn" id="genreMoreBtn" onclick="loadMoreGenre()">Mehr laden</button>
+    </div>
+  </div>
+
+  <div id="tabsWrapper">
+    <div id="tab-discover" class="tab-panel active">
+      <div class="panel-head">
+        <button class="reload-btn" onclick="loadDiscover()">↻ Neu laden</button>
+      </div>
+      <div id="discover" class="grid"></div>
+    </div>
+    <div id="tab-nowplaying" class="tab-panel">
+      <div id="nowplaying" class="grid"></div>
+    </div>
+    <div id="tab-watchlist" class="tab-panel">
+      <div id="watchlist" class="grid"></div>
+    </div>
+    <div id="tab-watched" class="tab-panel">
+      <div id="watched" class="grid"></div>
+    </div>
+  </div>
+
+<script>
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
+}
+
+let discoverMovies = [];
+
+async function loadDiscover() {
+  const res = await fetch('/api/discover');
+  discoverMovies = await res.json();
+  renderDiscover();
+}
+
+function renderDiscover() {
+  document.getElementById('discover').innerHTML = renderGrid(discoverMovies) || emptyHint('Gerade keine Empfehlungen verfügbar.');
+}
+
+function patchDiscover(tmdbId, patch) {
+  const updated = discoverMovies.map(m => m.tmdbId === tmdbId ? { ...m, ...patch } : m);
+  // Filme, die auf eine Liste wandern, werden bei "Empfohlen für dich" ausgeblendet
+  discoverMovies = updated.filter(m => !m.watched && !m.onWatchlist);
+  renderDiscover();
+
+  genreMovies = genreMovies.map(m => m.tmdbId === tmdbId ? { ...m, ...patch } : m);
+  if (currentGenreId) renderGenre();
+}
+
+async function loadNowPlaying() {
+  const res = await fetch('/api/now-playing');
+  const movies = await res.json();
+  document.getElementById('nowplaying').innerHTML = renderGrid(movies) || emptyHint('Gerade keine Neuerscheinungen verfügbar.');
+}
+
+async function loadWatchlist() {
+  const res = await fetch('/api/watchlist');
+  const movies = await res.json();
+  document.getElementById('count-watchlist').textContent = movies.length ? `(${movies.length})` : '';
+  document.getElementById('watchlist').innerHTML = movies.length
+    ? renderGrid(movies.map(m => ({ ...m, onWatchlist: true })))
+    : emptyHint('Noch keine Filme auf der Watchlist. Auf einer Filmseite auf "Will ich schauen" drücken.');
+}
+
+async function loadWatched() {
+  const res = await fetch('/api/watched');
+  const movies = await res.json();
+  document.getElementById('count-watched').textContent = movies.length ? `(${movies.length})` : '';
+  document.getElementById('watched').innerHTML = movies.length
+    ? renderGrid(movies.map(m => ({ ...m, watched: true, year: m.watchedDate })))
+    : emptyHint('Noch keine Filme als gesehen markiert.');
+}
+
+let searchDebounceTimer = null;
+
+function onSearchInput() {
+  clearTimeout(searchDebounceTimer);
+  searchDebounceTimer = setTimeout(search, 300);
+}
+
+async function search() {
+  clearTimeout(searchDebounceTimer);
+  const q = document.getElementById('q').value;
+  if (!q.trim()) {
+    clearSearch();
+    return;
+  }
+  const res = await fetch('/api/search?q=' + encodeURIComponent(q));
+  const movies = await res.json();
+
+  // Falls währenddessen weitergetippt wurde, dieses veraltete Ergebnis verwerfen
+  if (document.getElementById('q').value !== q) return;
+
+  document.getElementById('tabsWrapper').style.display = 'none';
+  document.getElementById('searchSection').style.display = 'block';
+  document.getElementById('results').innerHTML = renderGrid(movies) || emptyHint('Keine Filme gefunden.');
+}
+
+function clearSearch() {
+  document.getElementById('q').value = '';
+  document.getElementById('searchSection').style.display = 'none';
+  document.getElementById('tabsWrapper').style.display = 'block';
+}
+
+let genreMovies = [];
+let currentGenreId = null;
+let genrePage = 1;
+
+async function loadGenres() {
+  const res = await fetch('/api/genres');
+  const genres = await res.json();
+  const select = document.getElementById('genreSelect');
+  select.innerHTML = '<option value="">Genre...</option>' +
+    genres.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+}
+
+async function onGenreChange() {
+  const select = document.getElementById('genreSelect');
+  const id = select.value;
+  if (!id) return;
+
+  currentGenreId = id;
+  genrePage = 1;
+  document.getElementById('genreTitle').textContent = 'Genre: ' + select.options[select.selectedIndex].textContent;
+
+  document.getElementById('tabsWrapper').style.display = 'none';
+  document.getElementById('searchSection').style.display = 'none';
+  document.getElementById('genreSection').style.display = 'block';
+
+  const res = await fetch(`/api/genre/${id}?page=1`);
+  genreMovies = await res.json();
+  renderGenre();
+}
+
+async function loadMoreGenre() {
+  genrePage++;
+  const res = await fetch(`/api/genre/${currentGenreId}?page=${genrePage}`);
+  const more = await res.json();
+  genreMovies = genreMovies.concat(more);
+  renderGenre();
+}
+
+function renderGenre() {
+  document.getElementById('genreResults').innerHTML = renderGrid(genreMovies) || emptyHint('Keine Filme gefunden.');
+}
+
+function clearGenre() {
+  document.getElementById('genreSelect').value = '';
+  currentGenreId = null;
+  document.getElementById('genreSection').style.display = 'none';
+  document.getElementById('tabsWrapper').style.display = 'block';
+}
+
+function emptyHint(text) {
+  return `<div class="empty-hint">${text}</div>`;
+}
+
+function escapeStr(s) {
+  return (s || '').replace(/'/g, "\\'");
+}
+
+function renderGrid(movies) {
+  return movies.map(m => `
+    <a href="movie.html?id=${m.tmdbId}">
+      <div class="card">
+        ${m.watched ? '<span class="badge">gesehen</span>' : ''}
+        ${!m.watched && m.onWatchlist ? '<span class="badge watchlist">will ich schauen</span>' : ''}
+        <img src="${m.poster || ''}" alt="">
+        <div class="title">${m.title}</div>
+        <div class="meta">${m.year || ''}</div>
+        <div class="quick-actions">
+          <button class="qa-btn ${m.watched ? 'qa-active-watched' : ''}"
+            onclick="event.preventDefault(); event.stopPropagation(); quickToggleWatched(${m.tmdbId}, '${escapeStr(m.title)}', '${m.poster || ''}')">
+            ${m.watched ? '✓ gesehen' : 'gesehen'}
+          </button>
+          <button class="qa-btn ${m.onWatchlist ? 'qa-active-watchlist' : ''}"
+            onclick="event.preventDefault(); event.stopPropagation(); quickToggleWatchlist(${m.tmdbId}, '${escapeStr(m.title)}', '${m.poster || ''}')">
+            ${m.onWatchlist ? '✓ Liste' : 'will ich sehen'}
+          </button>
+        </div>
+      </div>
+    </a>
+  `).join('');
+}
+
+async function quickToggleWatched(tmdbId, title, poster) {
+  const res = await fetch('/api/watched');
+  const watched = await res.json();
+  const already = watched.some(w => w.tmdbId === tmdbId);
+
+  if (already) {
+    await fetch('/api/watched/' + tmdbId, { method: 'DELETE' });
+    patchDiscover(tmdbId, { watched: false });
+  } else {
+    await fetch('/api/watched', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tmdbId, title, poster }),
+    });
+    patchDiscover(tmdbId, { watched: true, onWatchlist: false });
+  }
+  refreshTabs();
+}
+
+async function quickToggleWatchlist(tmdbId, title, poster) {
+  const res = await fetch('/api/watchlist');
+  const list = await res.json();
+  const already = list.some(w => w.tmdbId === tmdbId);
+
+  if (already) {
+    await fetch('/api/watchlist/' + tmdbId, { method: 'DELETE' });
+    patchDiscover(tmdbId, { onWatchlist: false });
+  } else {
+    await fetch('/api/watchlist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tmdbId, title, poster }),
+    });
+    patchDiscover(tmdbId, { onWatchlist: true });
+  }
+  refreshTabs();
+}
+
+function refreshTabs() {
+  loadNowPlaying();
+  loadWatchlist();
+  loadWatched();
+  if (document.getElementById('searchSection').style.display !== 'none') search();
+}
+
+async function logout() {
+  await fetch('/api/logout', { method: 'POST' });
+  location.href = 'login.html';
+}
+
+async function init() {
+  const res = await fetch('/api/me');
+  if (!res.ok) {
+    location.href = 'login.html';
+    return;
+  }
+  const me = await res.json();
+  document.getElementById('whoami').textContent = `Angemeldet als ${me.username}`;
+
+  loadDiscover();
+  loadNowPlaying();
+  loadWatchlist();
+  loadWatched();
+  loadGenres();
+}
+
+init();
+</script>
+<script>
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+</script>
+</body>
+</html>
