@@ -85,6 +85,8 @@
 
 <script>
 function switchTab(name) {
+  if (document.getElementById('searchSection').style.display !== 'none') clearSearch();
+  if (document.getElementById('genreSection').style.display !== 'none') clearGenre();
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
 }
@@ -223,13 +225,23 @@ function escapeStr(s) {
   return (s || '').replace(/'/g, "\\'");
 }
 
+function escapeHtml(s) {
+  return (s || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
 function renderGrid(movies) {
   return movies.map(m => `
     <a href="movie.html?id=${m.tmdbId}">
       <div class="card">
         ${m.watched ? '<span class="badge">gesehen</span>' : ''}
         ${!m.watched && m.onWatchlist ? '<span class="badge watchlist">will ich schauen</span>' : ''}
-        <img src="${m.poster || ''}" alt="">
+        <div class="poster">
+          <img src="${m.poster || ''}" alt="">
+          <div class="hover-preview">
+            ${m.tmdbRating ? `<span class="hover-rating">★ ${m.tmdbRating.toFixed(1)}</span>` : ''}
+            ${m.overview ? `<div class="hover-overview">${escapeHtml(m.overview)}</div>` : ''}
+          </div>
+        </div>
         <div class="title">${m.title}</div>
         <div class="meta">${m.year || ''}</div>
         <div class="quick-actions">

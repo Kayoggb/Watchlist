@@ -287,6 +287,72 @@
       "title": "Uncharted",
       "poster": "https://image.tmdb.org/t/p/w342/2LgjbzhZiLt6LGGEHPEg4Ch0PC9.jpg",
       "watchedDate": "2026-08-26"
+    },
+    {
+      "tmdbId": 10398,
+      "title": "Doppelmord",
+      "poster": "https://image.tmdb.org/t/p/w342/3FyOWaRAKG2GadBR2CPN31SblQY.jpg",
+      "watchedDate": "2026-09-25"
+    },
+    {
+      "tmdbId": 1315772,
+      "title": "Minions & Monster",
+      "poster": "https://image.tmdb.org/t/p/w342/6jtBUoqgOSElz1v5QahkrWCYXm1.jpg",
+      "watchedDate": "2026-10-02"
+    },
+    {
+      "tmdbId": 1265609,
+      "title": "War Machine",
+      "poster": "https://image.tmdb.org/t/p/w342/sNnIZ06lIU8TnnlOT7tK87C9bPj.jpg",
+      "watchedDate": "2026-10-02"
+    },
+    {
+      "tmdbId": 1084242,
+      "title": "Zoomania 2",
+      "poster": "https://image.tmdb.org/t/p/w342/1PQLWjtGH1QfiGlFI83WUFbw5GN.jpg",
+      "watchedDate": "2026-10-02"
+    },
+    {
+      "tmdbId": 37165,
+      "title": "Die Truman Show",
+      "poster": "https://image.tmdb.org/t/p/w342/7JxsQZbcUZiYhAKeTorrFyFptQv.jpg",
+      "watchedDate": "2026-10-02"
+    },
+    {
+      "tmdbId": 2109,
+      "title": "Rush Hour",
+      "poster": "https://image.tmdb.org/t/p/w342/nwPhAsfnb7f46bZkWLG7IRP5HXr.jpg",
+      "watchedDate": "2026-10-21"
+    },
+    {
+      "tmdbId": 5175,
+      "title": "Rush Hour 2",
+      "poster": "https://image.tmdb.org/t/p/w342/qSzl4R5sqcAgbW56OPlycpPAEtD.jpg",
+      "watchedDate": "2026-10-21"
+    },
+    {
+      "tmdbId": 5174,
+      "title": "Rush Hour 3",
+      "poster": "https://image.tmdb.org/t/p/w342/rIlpeGkrkaYhUtmuaxJodC6mdFT.jpg",
+      "watchedDate": "2026-10-21"
+    },
+    {
+      "tmdbId": 109410,
+      "title": "42 - Die wahre Geschichte einer Sportlegende",
+      "poster": "https://image.tmdb.org/t/p/w342/mqQ2apqKJWp1ucYsRpcqq9H8Mto.jpg",
+      "watchedDate": "2026-10-21"
+    },
+    {
+      "tmdbId": 1242419,
+      "title": "Der Hochstapler - Roofman",
+      "poster": "https://image.tmdb.org/t/p/w342/dEluo7G2r1uqb0leREnzhfycqdQ.jpg",
+      "watchedDate": "2026-10-21"
+    },
+    {
+      "tmdbId": 1101383,
+      "title": "The End of Oak Street",
+      "poster": "https://image.tmdb.org/t/p/w342/4XS0AJqgcl9uNS67hRsrO7Ff4ya.jpg",
+      "watchedDate": "2026-10-21"
     }
   ]
 }
